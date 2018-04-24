@@ -11,22 +11,18 @@
 
 namespace Flarum\Foundation;
 
-use Flarum\Database\DatabaseServiceProvider;
-use Flarum\Database\MigrationServiceProvider;
 use Flarum\Install\Installer;
 use Flarum\Install\InstallServiceProvider;
 use Flarum\Locale\LocaleServiceProvider;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\Settings\UninstalledSettingsRepository;
-use Illuminate\Cache\ArrayStore;
-use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Config\Repository as ConfigRepository;
-use Illuminate\Contracts\Cache\Repository;
-use Illuminate\Contracts\Cache\Store;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Filesystem\FilesystemServiceProvider;
-use Illuminate\Hashing\HashServiceProvider;
 use Illuminate\Validation\ValidationServiceProvider;
-use Illuminate\View\ViewServiceProvider;
+use Illuminate\View\Engines\EngineResolver;
+use Illuminate\View\Engines\PhpEngine;
+use Illuminate\View\FileViewFinder;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -34,11 +30,6 @@ use Psr\Log\LoggerInterface;
 
 class UninstalledSite implements SiteInterface
 {
-    /**
-     * @var Application
-     */
-    protected $laravel;
-
     /**
      * @var string
      */
@@ -74,45 +65,48 @@ class UninstalledSite implements SiteInterface
 
     private function bootLaravel(): Application
     {
-        if ($this->laravel !== null) {
-            return $this->laravel;
-        }
-
         date_default_timezone_set('UTC');
 
-        $app = new Application($this->basePath, $this->publicPath);
+        $laravel = new Application($this->basePath, $this->publicPath);
 
         if ($this->storagePath) {
-            $app->useStoragePath($this->storagePath);
+            $laravel->useStoragePath($this->storagePath);
         }
 
-        $app->instance('env', 'production');
-        $app->instance('flarum.config', []);
-        $app->instance('config', $config = $this->getIlluminateConfig($app));
+        $laravel->instance('env', 'production');
+        $laravel->instance('flarum.config', []);
+        $laravel->instance('config', $config = $this->getIlluminateConfig($laravel));
 
-        $this->registerLogger($app);
+        $this->registerLogger($laravel);
 
-        $this->registerCache($app);
+        $laravel->register(LocaleServiceProvider::class);
+        $laravel->register(FilesystemServiceProvider::class);
+        $laravel->register(ValidationServiceProvider::class);
 
-        $app->register(MigrationServiceProvider::class);
-        $app->register(LocaleServiceProvider::class);
-        $app->register(FilesystemServiceProvider::class);
-        $app->register(HashServiceProvider::class);
-        $app->register(ViewServiceProvider::class);
-        $app->register(ValidationServiceProvider::class);
+        $laravel->register(InstallServiceProvider::class);
 
-        $app->register(InstallServiceProvider::class);
-
-        $app->singleton(
+        $laravel->singleton(
             SettingsRepositoryInterface::class,
             UninstalledSettingsRepository::class
         );
 
-        $app->boot();
+        $laravel->singleton('view', function($app) {
+            $engines = new EngineResolver();
+            $engines->register('php', function() {
+                return new PhpEngine();
+            });
+            $finder = new FileViewFinder($app->make('files'), []);
+            $dispatcher = $app->make(Dispatcher::class);
 
-        $this->laravel = $app;
+            return new \Illuminate\View\Factory(
+                $engines, $finder, $dispatcher
+            );
+        });
 
-        return $app;
+
+        $laravel->boot();
+
+        return $laravel;
     }
 
     /**
@@ -122,10 +116,6 @@ class UninstalledSite implements SiteInterface
     protected function getIlluminateConfig(Application $app)
     {
         return new ConfigRepository([
-            'view' => [
-                'paths' => [],
-                'compiled' => $app->storagePath().'/views',
-            ],
             'session' => [
                 'lifetime' => 120,
                 'files' => $app->storagePath().'/sessions',
@@ -148,11 +138,5 @@ class UninstalledSite implements SiteInterface
 
         $app->instance('log', $logger);
         $app->alias('log', LoggerInterface::class);
-    }
-
-    protected function registerCache(Application $app)
-    {
-        $app->singleton(Repository::class, CacheRepository::class);
-        $app->singleton(Store::class, ArrayStore::class);
     }
 }
