@@ -52,7 +52,7 @@ class UninstalledSite implements SiteInterface
     }
 
     /**
-     * Create and boot a Flarum application instance
+     * Create and boot a Flarum application instance.
      *
      * @return AppInterface
      */
@@ -90,9 +90,9 @@ class UninstalledSite implements SiteInterface
             UninstalledSettingsRepository::class
         );
 
-        $laravel->singleton('view', function($app) {
+        $laravel->singleton('view', function ($app) {
             $engines = new EngineResolver();
-            $engines->register('php', function() {
+            $engines->register('php', function () {
                 return new PhpEngine();
             });
             $finder = new FileViewFinder($app->make('files'), []);
@@ -102,7 +102,6 @@ class UninstalledSite implements SiteInterface
                 $engines, $finder, $dispatcher
             );
         });
-
 
         $laravel->boot();
 

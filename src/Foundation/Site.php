@@ -22,13 +22,13 @@ class Site
      */
     public static function fromPaths(array $paths)
     {
-        if (!isset($paths['base'])) {
+        if (! isset($paths['base'])) {
             throw new InvalidArgumentException(
                 'No base path given'
             );
         }
 
-        if (!isset($paths['public'])) {
+        if (! isset($paths['public'])) {
             $paths['public'] = $paths['base'];
         }
 
@@ -52,7 +52,7 @@ class Site
     {
         $config = include "$basePath/config.php";
 
-        if (!is_array($config)) {
+        if (! is_array($config)) {
             throw new RuntimeException('config.php should return an array');
         }
 

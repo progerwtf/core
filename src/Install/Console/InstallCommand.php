@@ -227,7 +227,6 @@ class InstallCommand extends AbstractCommand
 
         $this->info('Testing config');
 
-
         $factory = new ConnectionFactory($this->application);
 
         $this->db = $factory->make($laravelDbConfig);

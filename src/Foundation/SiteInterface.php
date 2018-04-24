@@ -14,14 +14,14 @@ namespace Flarum\Foundation;
 interface SiteInterface
 {
     /**
-     * Return a site configuration array
+     * Return a site configuration array.
      *
      * @return array
      */
     //public function getConfig(): array;
 
     /**
-     * Create and boot a Flarum application instance
+     * Create and boot a Flarum application instance.
      *
      * @return AppInterface
      */

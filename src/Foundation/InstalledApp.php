@@ -1,5 +1,14 @@
 <?php
 
+/*
+ * This file is part of Flarum.
+ *
+ * (c) Toby Zerner <toby.zerner@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Flarum\Foundation;
 
 use Flarum\Database\Console\GenerateMigrationCommand;
@@ -38,7 +47,7 @@ class InstalledApp implements AppInterface
     {
         if ($this->inMaintenanceMode()) {
             return $this->getMaintenanceMiddleware();
-        } else if ($this->needsUpdate()) {
+        } elseif ($this->needsUpdate()) {
             return $this->getUpdaterMiddleware();
         }
 
