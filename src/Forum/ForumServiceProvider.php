@@ -16,15 +16,8 @@ use Flarum\Event\ConfigureMiddleware;
 use Flarum\Extension\Event\Disabled;
 use Flarum\Extension\Event\Enabled;
 use Flarum\Foundation\AbstractServiceProvider;
-use Flarum\Http\Middleware\AuthenticateWithSession;
-use Flarum\Http\Middleware\CollectGarbage;
-use Flarum\Http\Middleware\DispatchRoute;
-use Flarum\Http\Middleware\HandleErrors;
-use Flarum\Http\Middleware\ParseJsonBody;
-use Flarum\Http\Middleware\RememberFromCookie;
-use Flarum\Http\Middleware\SetLocale;
-use Flarum\Http\Middleware\ShareErrorsFromSession;
-use Flarum\Http\Middleware\StartSession;
+use Flarum\Foundation\Application;
+use Flarum\Http\Middleware as HttpMiddleware;
 use Flarum\Http\RouteCollection;
 use Flarum\Http\RouteHandlerFactory;
 use Flarum\Http\UrlGenerator;
@@ -48,26 +41,28 @@ class ForumServiceProvider extends AbstractServiceProvider
             return new RouteCollection;
         });
 
-        $this->app->singleton('flarum.forum.middleware', function ($app) {
+        $this->app->singleton('flarum.forum.middleware', function (Application $app) {
             $pipe = new MiddlewarePipe;
 
             // All requests should first be piped through our global error handler
             $debugMode = ! $app->isUpToDate() || $app->inDebugMode();
-            $pipe->pipe($app->make(HandleErrors::class, ['debug' => $debugMode]));
+            $pipe->pipe($app->make(HttpMiddleware\HandleErrors::class, ['debug' => $debugMode]));
 
-            $pipe->pipe($app->make(ParseJsonBody::class));
-            $pipe->pipe($app->make(CollectGarbage::class));
-            $pipe->pipe($app->make(StartSession::class));
-            $pipe->pipe($app->make(RememberFromCookie::class));
-            $pipe->pipe($app->make(AuthenticateWithSession::class));
-            $pipe->pipe($app->make(SetLocale::class));
-            $pipe->pipe($app->make(ShareErrorsFromSession::class));
+            $pipe->pipe($app->make(HttpMiddleware\ParseJsonBody::class));
+            $pipe->pipe($app->make(HttpMiddleware\CollectGarbage::class));
+            $pipe->pipe($app->make(HttpMiddleware\StartSession::class));
+            $pipe->pipe($app->make(HttpMiddleware\RememberFromCookie::class));
+            $pipe->pipe($app->make(HttpMiddleware\AuthenticateWithSession::class));
+            $pipe->pipe($app->make(HttpMiddleware\SetLocale::class));
+            $pipe->pipe($app->make(HttpMiddleware\ShareErrorsFromSession::class));
 
             event(new ConfigureMiddleware($pipe, 'forum'));
 
-            $pipe->pipe($app->make(DispatchRoute::class, ['routes' => $app->make('flarum.forum.routes')]));
-
             return $pipe;
+        });
+
+        $this->app->afterResolving('flarum.forum.middleware', function (MiddlewarePipe $pipe) {
+            $pipe->pipe(new HttpMiddleware\DispatchRoute($this->app->make('flarum.forum.routes')));
         });
     }
 
