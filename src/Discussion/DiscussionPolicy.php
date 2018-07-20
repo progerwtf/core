@@ -123,7 +123,7 @@ class DiscussionPolicy extends AbstractPolicy
      */
     public function rename(User $actor, Discussion $discussion)
     {
-        if ($discussion->start_user_id == $actor->id) {
+        if ($discussion->start_user_id == $actor->id && $actor->can('reply', $discussion)) {
             $allowRenaming = $this->settings->get('allow_renaming');
 
             if ($allowRenaming === '-1'
@@ -141,7 +141,7 @@ class DiscussionPolicy extends AbstractPolicy
      */
     public function hide(User $actor, Discussion $discussion)
     {
-        if ($discussion->start_user_id == $actor->id && $discussion->participants_count <= 1) {
+        if ($discussion->start_user_id == $actor->id && $discussion->participants_count <= 1 && $actor->can('reply', $discussion)) {
             return true;
         }
     }
