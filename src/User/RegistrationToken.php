@@ -18,7 +18,7 @@ use Flarum\User\Exception\InvalidConfirmationTokenException;
 /**
  * @todo document database columns with @property
  */
-class AuthToken extends AbstractModel
+class RegistrationToken extends AbstractModel
 {
     /**
      * {@inheritdoc}
@@ -31,6 +31,7 @@ class AuthToken extends AbstractModel
     protected $dates = ['created_at'];
 
     protected $casts = [
+        'user_attributes' => 'array',
         'payload' => 'array'
     ];
 
@@ -47,11 +48,14 @@ class AuthToken extends AbstractModel
      * @param array $payload
      * @return static
      */
-    public static function generate(array $payload)
+    public static function generate(string $provider, string $identifier, array $attributes, array $payload)
     {
         $token = new static;
 
         $token->id = str_random(40);
+        $token->provider = $provider;
+        $token->identifier = $identifier;
+        $token->user_attributes = $attributes;
         $token->payload = $payload;
         $token->created_at = time();
 

@@ -688,6 +688,14 @@ class User extends AbstractModel
     }
 
     /**
+     * Get the user's login providers.
+     */
+    public function loginProviders()
+    {
+        return $this->hasMany(LoginProvider::class);
+    }
+
+    /**
      * @param string $ability
      * @param array|mixed $arguments
      * @return bool
