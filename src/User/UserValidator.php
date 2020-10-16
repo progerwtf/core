@@ -46,7 +46,7 @@ class UserValidator extends AbstractValidator
         return [
             'username' => [
                 'required',
-                'regex:/^[a-z0-9_-]+$/i',
+                'regex:/^[a-z0-9а-я_-]+$/i',
                 'unique:users,username'.$idSuffix,
                 'min:3',
                 'max:30'
